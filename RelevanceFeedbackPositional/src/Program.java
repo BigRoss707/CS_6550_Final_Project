@@ -35,16 +35,12 @@ public class Program {
         boolean append = false;
         
 		//OUR CODE
-		//TODO RETRIEVE LIST OF FILES IN INDEX
-		//TODO RETRIEVE LIST OF TERMS IN FILE WITH INDICES
-		//TODO IMPLEMENT RETRIEVAL USING OUR OWN RM1(OR RM3) ALGORITHM
 		//TODO IMPLEMENT THE POSITIONAL MODEL USING GALAGO
-		// open index
         
+		// open index
         Retrieval retrieval = RetrievalFactory.instance(indexPath, Parameters.create());
 		
         //load queries
-        //TODO LOAD THESE FROM FILES
         List <Parameters> queries = new ArrayList <> ();
         BufferedReader reader = new BufferedReader(new FileReader(queryInputFile));
         String line = reader.readLine();

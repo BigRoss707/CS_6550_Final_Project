@@ -204,21 +204,46 @@ public class PositionalRelevanceModel implements ExpansionModel{
 	        //RM 1 Evaluation
 	        for(int i = 0; i < initialResults.size(); i++)
 	        {
-	        	//estimate of term frequency in document
-	        	double ptd = getDocumentCount(feedbackData, term, initialResults.get(i));
-	        	
-	        	//normalized term weights?
-	        	for(String term_p : queryTerms)
+	        	//Note, I did not remove stop words from orderedTerms, the above list of terms "terms" does remove stop words
+	        	List<String> docTerms = feedbackData.orderedTerms.get(initialResults.get(i));
+	        	for(int j = 0; j < docTerms.size(); j++)
 	        	{
-	        		ptd = ptd * getDocumentCount(feedbackData, term_p, initialResults.get(i));
+	        		double pqdi = GetPQDI(); //TODO Implement as a method
+	        		double pwdi = GetPWDI(); //TODO Implement as a method
+	        		double docSize = docTerms.size();
+	        		
+	        		pt = pt + (pqdi * pwdi) / docSize;
 	        	}
-	        	
-	        	pt = pt + ptd;
 	        }
 	        resultTerms.add((WeightedTerm)(new WeightedUnigram(term, pt)));
         }
         
         return resultTerms;
+	}
+	
+	//Positional Query likelihood score
+	public Double GetPQDI()
+	{
+		double result = 0;
+		
+		//TODO
+		//See section 3.2.3 for implementation details
+		//Parameters will need to be added such as a running word count
+		
+		return result;
+	}
+	
+	
+	public Double GetPWDI()
+	{
+		double result = 0;
+		
+		//TODO
+		//See section 3.2.3 for implementation details
+		//Parameters will need to be added such as a running word count
+		//Basically the product of PQDI for the query terms
+		
+		return result;
 	}
 	
 }

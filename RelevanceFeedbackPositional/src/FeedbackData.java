@@ -1,5 +1,6 @@
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ public class FeedbackData {
     Map<String, Map<ScoredDocument, Integer>> termCounts;
     Map<ScoredDocument, Map<String, Integer>> termCountsReverse;
     Map<ScoredDocument, Map<String, List<Integer>>> termPositions;
+    Map<ScoredDocument, List<String>> orderedTerms;
     
     public FeedbackData(Retrieval r, Set<String> exclusionTerms, List<ScoredDocument> results, Parameters fbParams) throws IOException{
         this.initialResults = results;
@@ -37,6 +39,7 @@ public class FeedbackData {
         termCounts = new HashMap <> ();
         termCountsReverse = new HashMap<>();
         termPositions = new HashMap<>();
+        orderedTerms = new HashMap<>();
         process();
     }
 
@@ -63,7 +66,8 @@ public class FeedbackData {
                 continue;
             }
 
-            List<String> docterms = doc.terms;
+            List<String> docterms = doc.terms; //TODO may need to verify that this contains all terms with repeats in order
+            List<String> stemmedTerms = new ArrayList<String>();
             
             //convert term positions for document to a ScoredDocument level map
             Map<String,List<Integer>> doctermpos = doc.getTermPositions(stemmer);
@@ -77,7 +81,8 @@ public class FeedbackData {
             for (String term : docterms) {
                 // perform stopword and query term filtering here 
                 String stemmedTerm = (stemmer == null) ? term : stemmer.stem(term);
-
+                stemmedTerms.add(stemmedTerm);
+                
                 if (exclusionTerms.contains(term)) {
                     continue; // on the blacklist
                 }
@@ -91,6 +96,7 @@ public class FeedbackData {
                     termCount.put(sd, 1);
                 }
             }
+            orderedTerms.put(sd, stemmedTerms);
         }
         termCountsReverse = convert(termCounts);
     }
