@@ -17,14 +17,14 @@ import org.lemurproject.galago.core.retrieval.query.StructuredQuery;
 import org.lemurproject.galago.core.util.WordLists;
 import org.lemurproject.galago.utility.Parameters;
 
-public class RelevanceModel1 implements ExpansionModel{
+public class PositionalRelevanceModel implements ExpansionModel{
 	protected Retrieval retrieval;
 	int defaultFbDocs, defaultFbTerms;
 	double defaultFbOrigWeight;
     Set <String> exclusionTerms;
     Stemmer stemmer;
 	
-    public RelevanceModel1(Retrieval r) throws IOException {
+    public PositionalRelevanceModel(Retrieval r) throws IOException {
     	retrieval = r;
         defaultFbDocs = (int) Math.round(r.getGlobalParameters().get("fbDocs", 10.0));
         defaultFbTerms = (int) Math.round(r.getGlobalParameters().get("fbTerm", 100.0));
@@ -191,6 +191,8 @@ public class RelevanceModel1 implements ExpansionModel{
 	}
 	
 	public List <WeightedTerm> computeWeights (FeedbackData feedbackData, Parameters fbParam, Parameters queryParameters, Set <String> queryTerms) throws Exception{
+		//TODO Implement to use the positional relevance model
+		
 		List<WeightedTerm> resultTerms = new ArrayList<WeightedTerm>();
 		List<ScoredDocument> initialResults = feedbackData.getInitialResults();		
 		Set<String> terms = getTerms(stemmer, feedbackData.getTermCounts().keySet());
