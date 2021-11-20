@@ -198,7 +198,7 @@ public class PositionalRelevanceModel implements ExpansionModel{
 		Set<String> terms = getTerms(stemmer, feedbackData.getTermCounts().keySet());
 		
 		//Query Likelihood
-        for(String term : queryTerms)
+        for(String term : terms)
         {
         	double pt = 0;
 	        //RM 1 Evaluation
@@ -235,19 +235,4 @@ public class PositionalRelevanceModel implements ExpansionModel{
 		
 		return result;
 	}
-	
-	
-	//Will still need to implement this for query words compared to the word that we want 
-	public Double GetPWDI()
-	{
-		double result = 0;
-		
-		//TODO
-		//See section 3.2.3 for implementation details
-		//Parameters will need to be added such as a running word count
-		//Basically the product of PQDI for the query terms
-		
-		return result;
-	}
-	
 }
