@@ -208,11 +208,14 @@ public class PositionalRelevanceModel implements ExpansionModel{
 	        	List<String> docTerms = feedbackData.orderedTerms.get(initialResults.get(i));
 	        	for(int j = 0; j < docTerms.size(); j++)
 	        	{
-	        		double pqdi = GetPQDI(); //TODO Implement as a method
-	        		double pwdi = GetPWDI(); //TODO Implement as a method
-	        		double docSize = docTerms.size();
-	        		
-	        		pt = pt + (pqdi * pwdi) / docSize;
+	        		if(docTerms.get(j).equals(term))
+	        		{
+		        		double pqdi = GetPQDI(); //TODO Implement as a method
+		        		double pwdi = 1;
+		        		double docSize = docTerms.size();
+		        		
+		        		pt = pt + (pqdi * pwdi) / docSize;
+	        		}
 	        	}
 	        }
 	        resultTerms.add((WeightedTerm)(new WeightedUnigram(term, pt)));
@@ -234,6 +237,7 @@ public class PositionalRelevanceModel implements ExpansionModel{
 	}
 	
 	
+	//Will still need to implement this for query words compared to the word that we want 
 	public Double GetPWDI()
 	{
 		double result = 0;
