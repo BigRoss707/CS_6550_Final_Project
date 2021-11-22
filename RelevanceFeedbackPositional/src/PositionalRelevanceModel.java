@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.lang.Math;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -225,14 +226,42 @@ public class PositionalRelevanceModel implements ExpansionModel{
 	}
 	
 	//Positional Query likelihood score
-	public Double GetPQDI()
+	public Double GetPQDI(int i, List<String> docTerms, List<String> queryTerms, double lambda, double sigma)
 	{
-		double result = 0;
+		double result = 1.0;
+		
+		for (int j = 1; j < docTerms.size(); j++) //skip firs term since it was already used
+		{
+			result = result * lambdaPQDI(i,docTerms,querTerms[j],lambda,sigma);
+		}
 		
 		//TODO
 		//See section 3.2.3 for implementation details
 		//Parameters will need to be added such as a running word count
 		
 		return result;
+	}
+	
+	private double lambdaPQDI(int i, string queryTerm, List<String> docTerms, double lambda, double sigma) {
+		return (1.0 - lambda) * PQDI(i,queryTerm,docTerms,lambda,sigma) + lambda * getCorpusCount(docTerms, queryTerm);
+	}
+	
+	private double PQDI(int i, string queryTerm, List<String> docTerms, double sigma) {
+		return CpQI(i,queryTerm,docTerms,sigma) / (Math.sqrt(w * Math.PI * Math.pow(sigma,2)));
+	}
+	
+	private double CpQI(int i, string queryTerm, List<String> docTerms, double sigma){
+		double score = 0.0;
+		
+		for (int j = 0; j < docTerms.size(); j++){
+			if CQJ(j,queryTerm,docTerms){
+				score += Math.exp((-Math.pow((double)i - (double) j, 2)/ (2 * Math.pow(sigma,2))))
+			}
+		}
+	}
+	
+	//if query term exists in index i in document docTerms
+	private boolean CQJ(int i, String queryTerm, List<String> docTerms){
+		return queryTerm.equals(docTerms[i]);
 	}
 }
