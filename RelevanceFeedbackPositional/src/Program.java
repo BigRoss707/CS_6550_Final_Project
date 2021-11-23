@@ -28,7 +28,7 @@ public class Program {
 
 	public static void main(String[] args) throws Exception {
 		String indexPath = "\\\\wsl$\\Ubuntu\\home\\jkramer\\CS_6550_galago_tutorial\\robust04-complete-index";
-        String outputFileName = "\\\\wsl$\\Ubuntu\\home\\jkramer\\CS_6550_galago_tutorial\\batchseachoutput";
+        String outputFileName = "\\\\wsl$\\Ubuntu\\home\\jkramer\\CS_6550_galago_tutorial\\batchseachoutput_positional";
         String queryInputFile = "\\\\wsl$\\Ubuntu\\home\\jkramer\\CS_6550_galago_tutorial\\query.titles.tsv";
         int requested = 1000; // number of documents to retrieve at base, We're going to use Galago to do all of our retrieval and then
         //mostly re-rank the retrieved results ourselves. Later on we can see if we can incorporate the index more directly
@@ -71,11 +71,15 @@ public class Program {
             Node root = StructuredQuery.parse(queryText);
             Node transformed = retrieval.transformQuery(root, query);
             
-            RelevanceModel1 model = new RelevanceModel1(retrieval);
-          
+            //RelevanceModel1 model = new RelevanceModel1(retrieval);
+            PositionalRelevanceModel model = new PositionalRelevanceModel(retrieval);
+
+            
             try{
                 query.set("fbOrigWeight", 0.5);
                 query.set("fbTerm", 100.0);
+                query.set("lamda", 0.5);
+                query.set("sigma", 2000);
                 Node expandedQuery = model.expand(root.clone(), query.clone());  
                 transformed = retrieval.transformQuery(expandedQuery, query);
             } catch (Exception ex){

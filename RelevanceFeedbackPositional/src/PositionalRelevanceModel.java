@@ -22,6 +22,7 @@ public class PositionalRelevanceModel implements ExpansionModel{
 	protected Retrieval retrieval;
 	int defaultFbDocs, defaultFbTerms;
 	double defaultFbOrigWeight;
+	double sigma, lambda;
     Set <String> exclusionTerms;
     Stemmer stemmer;
 	
@@ -29,6 +30,8 @@ public class PositionalRelevanceModel implements ExpansionModel{
     	retrieval = r;
         defaultFbDocs = (int) Math.round(r.getGlobalParameters().get("fbDocs", 10.0));
         defaultFbTerms = (int) Math.round(r.getGlobalParameters().get("fbTerm", 100.0));
+        sigma = r.getGlobalParameters().get("sigma", 2000.0);
+        lambda = r.getGlobalParameters().get("lambda", 0.5);
         defaultFbOrigWeight = r.getGlobalParameters().get("fbOrigWeight", 0.2);
         exclusionTerms = WordLists.getWordList(r.getGlobalParameters().get("rmstopwords", "rmstop"));
         Parameters gblParms = r.getGlobalParameters();
@@ -143,22 +146,36 @@ public class PositionalRelevanceModel implements ExpansionModel{
     }
     
     public Double getCorpusCount(FeedbackData feedbackData, String term){
-    	Map<String, Map<ScoredDocument, Integer>> tc = feedbackData.getTermCounts();
-    	Map<ScoredDocument, Integer> tct = tc.get(term);    	
+    	//get corpus size
     	Map<ScoredDocument, Integer> dl = feedbackData.getDocLength();
-    	
-    	double termCount = 0;
-    	for(ScoredDocument doc : tct.keySet())
-    	{
-    		termCount += tct.get(doc);
-    	}
-    	
     	double docCount = 0;
     	for(Integer i : dl.values())
     	{
     		docCount += i;
     	}	
     	
+    	Map<String, Map<ScoredDocument, Integer>> tc = feedbackData.getTermCounts();
+    	
+    	//The term does not exist in any document
+    	if(!tc.containsKey(term))
+    	{
+    		return (double)1/docCount; //Handling the cases where the term does not exist in documents
+    	}
+    	
+    	Map<ScoredDocument, Integer> tct = tc.get(term);    	  	
+    	
+    	//The term does not exist in the document we want
+    	if(tct == null)
+    	{
+    		return (double)1/docCount; //Handling the cases where the term does not exist in documents
+    	}
+    	
+    	double termCount = 0;
+    	for(ScoredDocument doc : tct.keySet())
+    	{
+    		termCount += tct.get(doc);
+    	}
+    	   	
     	return termCount/docCount;
     }
 
@@ -192,15 +209,24 @@ public class PositionalRelevanceModel implements ExpansionModel{
 	}
 	
 	public List <WeightedTerm> computeWeights (FeedbackData feedbackData, Parameters fbParam, Parameters queryParameters, Set <String> queryTerms) throws Exception{
-		//TODO Implement to use the positional relevance model
-		
 		List<WeightedTerm> resultTerms = new ArrayList<WeightedTerm>();
 		List<ScoredDocument> initialResults = feedbackData.getInitialResults();		
 		Set<String> terms = getTerms(stemmer, feedbackData.getTermCounts().keySet());
+		List<String> listQueryTerms = new ArrayList<String>();
+		for(String q : queryTerms)
+		{
+			listQueryTerms.add(q);
+		}
 		
 		//Query Likelihood
         for(String term : terms)
         {
+        	//we don't want to calculate the weights for query terms
+        	if(queryTerms.contains(term) || exclusionTerms.contains(term))
+        	{
+        		continue;
+        	}
+        	
         	double pt = 0;
 	        //RM 1 Evaluation
 	        for(int i = 0; i < initialResults.size(); i++)
@@ -211,7 +237,7 @@ public class PositionalRelevanceModel implements ExpansionModel{
 	        	{
 	        		if(docTerms.get(j).equals(term))
 	        		{
-		        		double pqdi = GetPQDI(); //TODO Implement as a method
+		        		double pqdi = GetPQDI(j,docTerms,listQueryTerms,feedbackData,lambda,sigma);
 		        		double pwdi = 1;
 		        		double docSize = docTerms.size();
 		        		
@@ -226,42 +252,46 @@ public class PositionalRelevanceModel implements ExpansionModel{
 	}
 	
 	//Positional Query likelihood score
-	public Double GetPQDI(int i, List<String> docTerms, List<String> queryTerms, double lambda, double sigma)
+	public Double GetPQDI(int i, List<String> docTerms, List<String> queryTerms, FeedbackData data, double lambda, double sigma)
 	{
 		double result = 1.0;
 		
-		for (int j = 1; j < docTerms.size(); j++) //skip firs term since it was already used
-		{
-			result = result * lambdaPQDI(i,docTerms,querTerms[j],lambda,sigma);
-		}
 		
-		//TODO
-		//See section 3.2.3 for implementation details
-		//Parameters will need to be added such as a running word count
+		for (int j = 0; j < queryTerms.size(); j++)
+		{
+			if(exclusionTerms.contains(queryTerms.get(j)))
+			{
+				continue;
+			}
+			
+			result = result * lambdaPQDI(i, queryTerms.get(j), docTerms, data, lambda, sigma);
+		}
 		
 		return result;
 	}
 	
-	private double lambdaPQDI(int i, string queryTerm, List<String> docTerms, double lambda, double sigma) {
-		return (1.0 - lambda) * PQDI(i,queryTerm,docTerms,lambda,sigma) + lambda * getCorpusCount(docTerms, queryTerm);
+	private double lambdaPQDI(int i, String queryTerm, List<String> docTerms, FeedbackData data, double lambda, double sigma) {
+		return (1.0 - lambda) * PQDI(i, queryTerm, docTerms, sigma) + lambda * getCorpusCount(data, queryTerm);
 	}
 	
-	private double PQDI(int i, string queryTerm, List<String> docTerms, double sigma) {
-		return CpQI(i,queryTerm,docTerms,sigma) / (Math.sqrt(w * Math.PI * Math.pow(sigma,2)));
+	private double PQDI(int i, String queryTerm, List<String> docTerms, double sigma) {
+		return CpQI(i, queryTerm, docTerms, sigma) / (Math.sqrt(2 * Math.PI * Math.pow(sigma,2)));
 	}
 	
-	private double CpQI(int i, string queryTerm, List<String> docTerms, double sigma){
+	private double CpQI(int i, String queryTerm, List<String> docTerms, double sigma){
 		double score = 0.0;
 		
 		for (int j = 0; j < docTerms.size(); j++){
-			if CQJ(j,queryTerm,docTerms){
-				score += Math.exp((-Math.pow((double)i - (double) j, 2)/ (2 * Math.pow(sigma,2))))
+			if(CQJ(j,queryTerm,docTerms)){
+				score += Math.exp((-Math.pow((double)i - (double) j, 2)/ (2 * Math.pow(sigma,2))));
 			}
 		}
+		
+		return score;
 	}
 	
 	//if query term exists in index i in document docTerms
 	private boolean CQJ(int i, String queryTerm, List<String> docTerms){
-		return queryTerm.equals(docTerms[i]);
+		return queryTerm.equals(docTerms.get(i));
 	}
 }
